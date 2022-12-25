@@ -26,14 +26,14 @@ func (r *repository) MakeTrips(trips models.Trips) (models.Trips, error) {
 
 func (r *repository) FindTrips() ([]models.Trips, error) {
 	var trips []models.Trips
-	err := r.db.Preload("User").Preload("Country").Find(&trips).Error
+	err := r.db.Preload("Country").Find(&trips).Error
 
 	return trips, err
 }
 
 func (r *repository) GetTrips(ID int) (models.Trips, error) {
 	var trips models.Trips
-	err := r.db.Preload("User").Preload("Country").First(&trips, ID).Error
+	err := r.db.Preload("Country").First(&trips, ID).Error
 
 	return trips, err
 }
@@ -47,7 +47,7 @@ func (r *repository) EditTrips(trips models.Trips, ID int) (models.Trips, error)
 
 func (r *repository) DeleteTrips(trips models.Trips, ID int) (models.Trips, error) {
 	var trip models.Trips
-	err := r.db.Delete(&trip).Error
+	err := r.db.Delete(&trips).Error
 
 	return trip, err
 }

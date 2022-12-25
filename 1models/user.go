@@ -7,15 +7,21 @@ type User struct {
 	Name      string    `json:"name" gorm:"type: varchar(255)"`
 	Email     string    `json:"email" gorm:"type: varchar(255)"`
 	Password  string    `json:"-" gorm:"type: varchar(255)"`
+	Phone     string    `json:"phone" gorm:"type: varchar(20)"`
+	Address   string    `json:"address" gorm:"type: varchar(255)"`
+	Gender    string    `json:"gender" gorm:"type: varchar(20)"`
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
 }
 
-type UsersProfileResponse struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+type UsersResponse struct {
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	Gender  string `json:"gender"`
+	Phone   string `json:"phone"`
+	Address string `json:"address"`
 }
 
-func (UsersProfileResponse) TableName() string {
+func (UsersResponse) TableName() string {
 	return "users"
 }

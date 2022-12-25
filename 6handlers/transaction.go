@@ -56,10 +56,18 @@ func (h *handlerTransaction) GetTrans(w http.ResponseWriter, r *http.Request) {
 
 func convertTransResponse(u models.Transaction) transactiondto.TransactionResponse {
 	return transactiondto.TransactionResponse{
-		BookerID: u.BookerID,
+		TripsID:  u.TripsID,
 		Trips:    u.Trips,
+		Users:    u.Users,
 		TotalPrc: u.TotalPrc,
 		Status:   u.Status,
+		// Name:           u.Name,
+		// Desc:           u.Desc,
+		// Price:          u.Price,
+		// Eat:            u.Eat,
+		// Quota:          u.Quota,
+		// Image:          u.Image,
+		// Country:        u.Country,
 	}
 }
 
@@ -85,7 +93,7 @@ func (h *handlerTransaction) MakeTrans(w http.ResponseWriter, r *http.Request) {
 
 	trans := models.Transaction{
 		TripsID:  request.TripsID,
-		BookerID: request.BookerID,
+		UsersID:  request.UsersID,
 		TotalPrc: request.TotalPrc,
 		Status:   request.Status,
 	}
@@ -114,21 +122,32 @@ func (h *handlerTransaction) EditTrans(w http.ResponseWriter, r *http.Request) {
 
 	ID, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	user := models.Transaction{}
-
-	if request.TripsID != 0 {
-		user.TripsID = request.TripsID
+	trans, err := h.TransactionRepository.GetTrans(ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
 	}
 
-	if request.BookerID != 0 {
-		user.BookerID = request.BookerID
+	// trans := models.Transaction{}
+
+	if request.TripsID != 0 {
+		trans.TripsID = request.TripsID
+	}
+
+	if request.UsersID != 0 {
+		trans.UsersID = request.UsersID
 	}
 
 	if request.TotalPrc != 0 {
-		user.TotalPrc = request.TotalPrc
+		trans.TotalPrc = request.TotalPrc
 	}
 
-	data, err := h.TransactionRepository.EditTrans(user, ID)
+	if request.Status != "" {
+		trans.TotalPrc = request.TotalPrc
+	}
+
+	data, err := h.TransactionRepository.EditTrans(trans, ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
@@ -137,7 +156,7 @@ func (h *handlerTransaction) EditTrans(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponse(data)}
+	response := dto.SuccessResult{Code: http.StatusOK, Data: convertTransResponse(data)}
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -146,7 +165,7 @@ func (h *handlerTransaction) DeleteTrans(w http.ResponseWriter, r *http.Request)
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	user, err := h.TransactionRepository.GetTrans(id)
+	trans, err := h.TransactionRepository.GetTrans(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -154,7 +173,7 @@ func (h *handlerTransaction) DeleteTrans(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	data, err := h.UserRepository.DeleteAcc(user, id)
+	data, err := h.TransactionRepository.DeleteTrans(trans, id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
@@ -163,6 +182,6 @@ func (h *handlerTransaction) DeleteTrans(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponse(data)}
+	response := dto.SuccessResult{Code: http.StatusOK, Data: convertTransResponse(data)}
 	json.NewEncoder(w).Encode(response)
 }

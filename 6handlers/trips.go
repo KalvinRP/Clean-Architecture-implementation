@@ -6,6 +6,7 @@ import (
 	dto "dewetour/5dto/result"
 	tripsdto "dewetour/5dto/trips"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -19,6 +20,73 @@ type handlerTrips struct {
 
 func HandlerTrips(TripsRepository repositories.TripsRepository) *handlerTrips {
 	return &handlerTrips{TripsRepository}
+}
+
+func convertResponseTrips(u models.Trips) models.Trips {
+	return models.Trips{
+		Name:           u.Name,
+		Desc:           u.Desc,
+		Price:          u.Price,
+		Accomodation:   u.Accomodation,
+		Transportation: u.Transportation,
+		Eat:            u.Eat,
+		Duration:       u.Duration,
+		DateTrip:       u.DateTrip,
+		Quota:          u.Quota,
+		Image:          u.Image,
+		CountryID:      u.CountryID,
+	}
+}
+
+func (h *handlerTrips) MakeTrips(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	request := new(tripsdto.TripsRequest)
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	validation := validator.New()
+	err := validation.Struct(request)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	trips := models.Trips{
+		Name:           request.Name,
+		Desc:           request.Desc,
+		Price:          request.Price,
+		Accomodation:   request.Accomodation,
+		Transportation: request.Transportation,
+		Eat:            request.Eat,
+		Duration:       request.Duration,
+		DateTrip:       request.DateTrip,
+		Quota:          request.Quota,
+		Image:          request.Image,
+		CountryID:      request.CountryID,
+	}
+
+	fmt.Println(trips.Quota, trips.CountryID)
+
+	trips, err = h.TripsRepository.MakeTrips(trips)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	trips, _ = h.TripsRepository.GetTrips(trips.ID)
+
+	w.WriteHeader(http.StatusOK)
+	response := dto.SuccessResult{Code: http.StatusOK, Data: trips}
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *handlerTrips) FindTrips(w http.ResponseWriter, r *http.Request) {
@@ -55,75 +123,10 @@ func (h *handlerTrips) GetTrips(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *handlerTrips) MakeTrips(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	request := new(tripsdto.TripsRequest)
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	validation := validator.New()
-	err := validation.Struct(request)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-	}
-
-	trips := models.Trips{
-		Name:           request.Name,
-		Desc:           request.Desc,
-		Price:          request.Price,
-		Accomodation:   request.Accomodation,
-		Transportation: request.Transportation,
-		Eat:            request.Eat,
-		Duration:       request.Duration,
-		DateTrip:       request.DateTrip,
-		Qty:            request.Qty,
-		Image:          request.Image,
-		UserID:         request.UserID,
-	}
-
-	trips, err = h.TripsRepository.MakeTrips(trips)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	trips, _ = h.TripsRepository.GetTrips(trips.ID)
-
-	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: http.StatusOK, Data: trips}
-	json.NewEncoder(w).Encode(response)
-}
-
-func convertResponseTrips(u models.Trips) models.TripsResponse {
-	return models.TripsResponse{
-		Name:           u.Name,
-		Desc:           u.Desc,
-		Price:          u.Price,
-		Accomodation:   u.Accomodation,
-		Transportation: u.Transportation,
-		Eat:            u.Eat,
-		Duration:       u.Duration,
-		DateTrip:       u.DateTrip,
-		Qty:            u.Qty,
-		Image:          u.Image,
-		User:           u.User,
-		Country:        u.Country,
-	}
-}
-
 func (h *handlerTrips) EditTrips(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	request := new(tripsdto.UpdateTripsRequest) //take pattern data submission
+	request := new(tripsdto.UpdateTripsRequest)
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -133,7 +136,14 @@ func (h *handlerTrips) EditTrips(w http.ResponseWriter, r *http.Request) {
 
 	ID, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	user := models.Trips{}
+	user, err := h.TripsRepository.GetTrips(ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+	}
+
+	// user := models.Trips{}
 
 	if request.Name != "" {
 		user.Name = request.Name
@@ -163,15 +173,15 @@ func (h *handlerTrips) EditTrips(w http.ResponseWriter, r *http.Request) {
 		user.DateTrip = request.DateTrip
 	}
 
-	// if request.Qty !=  {
-	// 	user.Password = request.Qty
-	// }
+	if request.Quota != 0 {
+		user.Quota = request.Quota
+	}
 
 	if request.Image != "" {
 		user.Image = request.Image
 	}
 
-	if request.Price != "" {
+	if request.Price != 0 {
 		user.Price = request.Price
 	}
 

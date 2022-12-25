@@ -56,17 +56,15 @@ func (h *handlerCountry) GetCountry(w http.ResponseWriter, r *http.Request) {
 
 func convertCountryResponse(u models.Country) countrydto.CountryResponse {
 	return countrydto.CountryResponse{
-		ID:       u.ID,
-		Name:     u.Name,
-		Email:    u.Email,
-		Password: u.Password,
+		ID:   u.ID,
+		Name: u.Name,
 	}
 }
 
-func (h *handlerUser) MakeAcc(w http.ResponseWriter, r *http.Request) {
+func (h *handlerCountry) MakeCountry(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 
-	request := new(countrydto.CreateUserRequest)
+	request := new(countrydto.CountryRequest)
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -83,27 +81,25 @@ func (h *handlerUser) MakeAcc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := models.User{
-		Name:     request.Name,
-		Email:    request.Email,
-		Password: request.Password,
+	country := models.Country{
+		Name: request.Name,
 	}
 
-	data, err := h.UserRepository.MakeAcc(user)
+	data, err := h.CountryRepository.MakeCountry(country)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(err.Error())
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponse(data)}
+	response := dto.SuccessResult{Code: http.StatusOK, Data: convertCountryResponse(data)}
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *handlerUser) EditAcc(w http.ResponseWriter, r *http.Request) {
+func (h *handlerCountry) EditCountry(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	request := new(countrydto.UpdateUserRequest) //take pattern data submission
+	request := new(countrydto.UpdateCountryRequest) //take pattern data submission
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -113,21 +109,20 @@ func (h *handlerUser) EditAcc(w http.ResponseWriter, r *http.Request) {
 
 	ID, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	user := models.User{}
+	country, err := h.CountryRepository.GetCountry(ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+	}
+
+	// country := models.Country{}
 
 	if request.Name != "" {
-		user.Name = request.Name
+		country.Name = request.Name
 	}
 
-	if request.Email != "" {
-		user.Email = request.Email
-	}
-
-	if request.Password != "" {
-		user.Password = request.Password
-	}
-
-	data, err := h.UserRepository.EditAcc(user, ID)
+	data, err := h.CountryRepository.EditCountry(country, ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
@@ -136,16 +131,16 @@ func (h *handlerUser) EditAcc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponse(data)}
+	response := dto.SuccessResult{Code: http.StatusOK, Data: convertCountryResponse(data)}
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *handlerUser) DeleteAcc(w http.ResponseWriter, r *http.Request) {
+func (h *handlerCountry) DeleteCountry(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	user, err := h.UserRepository.GetAcc(id)
+	country, err := h.CountryRepository.GetCountry(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -153,7 +148,7 @@ func (h *handlerUser) DeleteAcc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := h.UserRepository.DeleteAcc(user, id)
+	data, err := h.CountryRepository.DeleteCountry(country, id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
@@ -162,6 +157,6 @@ func (h *handlerUser) DeleteAcc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponse(data)}
+	response := dto.SuccessResult{Code: http.StatusOK, Data: convertCountryResponse(data)}
 	json.NewEncoder(w).Encode(response)
 }

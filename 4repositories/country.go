@@ -20,14 +20,14 @@ func RepositoryCountry(db *gorm.DB) *repository {
 
 func (r *repository) FindCountry() ([]models.Country, error) {
 	var country []models.Country
-	err := r.db.Preload("Profile").Preload("Trips").Find(&country).Error
+	err := r.db.Preload("Trips").Find(&country).Error
 
 	return country, err
 }
 
 func (r *repository) GetCountry(ID int) (models.Country, error) {
 	var user models.Country
-	err := r.db.Preload("Profile").Preload("Trips").First(&user, ID).Error
+	err := r.db.Preload("Trips").First(&user, ID).Error
 
 	return user, err
 }

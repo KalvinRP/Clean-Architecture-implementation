@@ -15,5 +15,5 @@ type CountryResponse struct {
 }
 
 func (CountryResponse) TableName() string {
-	return "profiles"
+	return "countries"
 }
