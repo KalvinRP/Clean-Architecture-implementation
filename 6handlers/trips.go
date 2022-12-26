@@ -6,13 +6,17 @@ import (
 	dto "dewetour/5dto/result"
 	tripsdto "dewetour/5dto/trips"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/gorilla/mux"
 )
+
+// var path_file = "http://localhost:5000/uploads/"
 
 type handlerTrips struct {
 	TripsRepository repositories.TripsRepository
@@ -41,12 +45,34 @@ func convertResponseTrips(u models.Trips) models.Trips {
 func (h *handlerTrips) MakeTrips(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	request := new(tripsdto.TripsRequest)
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-		return
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userId := int(userInfo["id"].(float64))
+
+	images := r.Context().Value("dataFile")
+	filename := images.(string)
+
+	// request := new(tripsdto.TripsRequest)
+	// if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+	// 	json.NewEncoder(w).Encode(response)
+	// 	return
+	// }
+
+	price, _ := strconv.Atoi(r.FormValue("price"))
+	quota, _ := strconv.Atoi(r.FormValue("quota"))
+	countryid, _ := strconv.Atoi(r.FormValue("country_id"))
+	request := tripsdto.TripsRequest{
+		Name:           r.FormValue("name"),
+		Desc:           r.FormValue("desc"),
+		Accomodation:   r.FormValue("accomodation"),
+		Transportation: r.FormValue("transport"),
+		Eat:            r.FormValue("eat"),
+		Duration:       r.FormValue("duration"),
+		DateTrip:       r.FormValue("datetrip"),
+		Price:          price,
+		Quota:          quota,
+		CountryID:      countryid,
 	}
 
 	validation := validator.New()
@@ -68,11 +94,10 @@ func (h *handlerTrips) MakeTrips(w http.ResponseWriter, r *http.Request) {
 		Duration:       request.Duration,
 		DateTrip:       request.DateTrip,
 		Quota:          request.Quota,
-		Image:          request.Image,
+		Image:          os.Getenv("PATH_FILE") + filename,
 		CountryID:      request.CountryID,
+		UserID:         userId,
 	}
-
-	fmt.Println(trips.Quota, trips.CountryID)
 
 	trips, err = h.TripsRepository.MakeTrips(trips)
 	if err != nil {
@@ -85,7 +110,7 @@ func (h *handlerTrips) MakeTrips(w http.ResponseWriter, r *http.Request) {
 	trips, _ = h.TripsRepository.GetTrips(trips.ID)
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: http.StatusOK, Data: trips}
+	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponseTrips(trips)}
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -97,6 +122,11 @@ func (h *handlerTrips) FindTrips(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
 		json.NewEncoder(w).Encode(response)
+	}
+
+	trippic, err := h.TripsRepository.FindTrips()
+	for i, p := range trippic {
+		trippic[i].Image = p.Image
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -126,72 +156,103 @@ func (h *handlerTrips) GetTrips(w http.ResponseWriter, r *http.Request) {
 func (h *handlerTrips) EditTrips(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	request := new(tripsdto.UpdateTripsRequest)
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-		return
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userId := int(userInfo["id"].(float64))
+
+	images := r.Context().Value("dataFile")
+	filename := images.(string)
+
+	// request := new(tripsdto.TripsRequest)
+	// if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+	// 	json.NewEncoder(w).Encode(response)
+	// 	return
+	// }
+
+	price, _ := strconv.Atoi(r.FormValue("price"))
+	quota, _ := strconv.Atoi(r.FormValue("quota"))
+	countryid, _ := strconv.Atoi(r.FormValue("country_id"))
+	request := tripsdto.TripsRequest{
+		Name:           r.FormValue("name"),
+		Desc:           r.FormValue("desc"),
+		Accomodation:   r.FormValue("accomodation"),
+		Transportation: r.FormValue("transport"),
+		Eat:            r.FormValue("eat"),
+		Duration:       r.FormValue("duration"),
+		DateTrip:       r.FormValue("datetrip"),
+		Price:          price,
+		Quota:          quota,
+		CountryID:      countryid,
+		Image:          os.Getenv("PATH_FILE") + filename,
 	}
 
 	ID, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	user, err := h.TripsRepository.GetTrips(ID)
+	trips, err := h.TripsRepository.GetTrips(ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
 		json.NewEncoder(w).Encode(response)
 	}
 
-	// user := models.Trips{}
+	// trips := models.Trips{}
 
 	if request.Name != "" {
-		user.Name = request.Name
+		trips.Name = request.Name
 	}
 
 	if request.Desc != "" {
-		user.Desc = request.Desc
+		trips.Desc = request.Desc
 	}
 
 	if request.Accomodation != "" {
-		user.Accomodation = request.Accomodation
+		trips.Accomodation = request.Accomodation
 	}
 
 	if request.Transportation != "" {
-		user.Transportation = request.Transportation
+		trips.Transportation = request.Transportation
 	}
 
 	if request.Eat != "" {
-		user.Eat = request.Eat
+		trips.Eat = request.Eat
 	}
 
 	if request.Duration != "" {
-		user.Duration = request.Duration
+		trips.Duration = request.Duration
 	}
 
 	if request.DateTrip != "" {
-		user.DateTrip = request.DateTrip
+		trips.DateTrip = request.DateTrip
 	}
 
 	if request.Quota != 0 {
-		user.Quota = request.Quota
+		trips.Quota = request.Quota
 	}
 
 	if request.Image != "" {
-		user.Image = request.Image
+		trips.Image = request.Image
 	}
 
 	if request.Price != 0 {
-		user.Price = request.Price
+		trips.Price = request.Price
 	}
 
-	data, err := h.TripsRepository.EditTrips(user, ID)
+	if request.CountryID != 0 {
+		trips.CountryID = request.CountryID
+	}
+
+	trips.UserID = userId
+
+	data, err := h.TripsRepository.EditTrips(trips, ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	data, _ = h.TripsRepository.GetTrips(data.ID)
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponseTrips(data)}
@@ -200,6 +261,9 @@ func (h *handlerTrips) EditTrips(w http.ResponseWriter, r *http.Request) {
 
 func (h *handlerTrips) DeleteTrips(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userId := int(userInfo["id"].(float64))
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
@@ -210,6 +274,8 @@ func (h *handlerTrips) DeleteTrips(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	user.UserID = userId
 
 	data, err := h.TripsRepository.DeleteTrips(user, id)
 	if err != nil {

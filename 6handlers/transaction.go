@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 )
 
@@ -19,6 +20,16 @@ type handlerTransaction struct {
 
 func HandlerTransaction(TransactionRepository repositories.TransactionRepository) *handlerTransaction {
 	return &handlerTransaction{TransactionRepository}
+}
+
+func convertTransResponse(u models.Transaction) transactiondto.TransactionResponse {
+	return transactiondto.TransactionResponse{
+		TripsID:  u.TripsID,
+		Trips:    u.Trips,
+		Users:    u.Users,
+		TotalPrc: u.TotalPrc,
+		Status:   u.Status,
+	}
 }
 
 func (h *handlerTransaction) FindTrans(w http.ResponseWriter, r *http.Request) {
@@ -54,25 +65,11 @@ func (h *handlerTransaction) GetTrans(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func convertTransResponse(u models.Transaction) transactiondto.TransactionResponse {
-	return transactiondto.TransactionResponse{
-		TripsID:  u.TripsID,
-		Trips:    u.Trips,
-		Users:    u.Users,
-		TotalPrc: u.TotalPrc,
-		Status:   u.Status,
-		// Name:           u.Name,
-		// Desc:           u.Desc,
-		// Price:          u.Price,
-		// Eat:            u.Eat,
-		// Quota:          u.Quota,
-		// Image:          u.Image,
-		// Country:        u.Country,
-	}
-}
-
 func (h *handlerTransaction) MakeTrans(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
+
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userId := int(userInfo["id"].(float64))
 
 	request := new(transactiondto.TransactionRequest)
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -96,6 +93,7 @@ func (h *handlerTransaction) MakeTrans(w http.ResponseWriter, r *http.Request) {
 		UsersID:  request.UsersID,
 		TotalPrc: request.TotalPrc,
 		Status:   request.Status,
+		UserID:   userId,
 	}
 
 	transaction, err := h.TransactionRepository.MakeTrans(trans)
@@ -103,6 +101,8 @@ func (h *handlerTransaction) MakeTrans(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(err.Error())
 	}
+
+	transaction, _ = h.TransactionRepository.GetTrans(trans.ID)
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: convertTransResponse(transaction)}
@@ -112,7 +112,10 @@ func (h *handlerTransaction) MakeTrans(w http.ResponseWriter, r *http.Request) {
 func (h *handlerTransaction) EditTrans(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	request := new(transactiondto.UpdateTransactionRequest) //take pattern data submission
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userId := int(userInfo["id"].(float64))
+
+	request := new(transactiondto.TransactionRequest)
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -147,6 +150,8 @@ func (h *handlerTransaction) EditTrans(w http.ResponseWriter, r *http.Request) {
 		trans.TotalPrc = request.TotalPrc
 	}
 
+	trans.UsersID = userId
+
 	data, err := h.TransactionRepository.EditTrans(trans, ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -154,6 +159,8 @@ func (h *handlerTransaction) EditTrans(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	data, _ = h.TransactionRepository.GetTrans(data.ID)
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: convertTransResponse(data)}

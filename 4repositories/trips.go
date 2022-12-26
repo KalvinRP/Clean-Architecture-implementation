@@ -39,10 +39,9 @@ func (r *repository) GetTrips(ID int) (models.Trips, error) {
 }
 
 func (r *repository) EditTrips(trips models.Trips, ID int) (models.Trips, error) {
-	var trip models.Trips
-	err := r.db.Save(&trips).Error
+	err := r.db.Model(&trips).Updates(trips).Error
 
-	return trip, err
+	return trips, err
 }
 
 func (r *repository) DeleteTrips(trips models.Trips, ID int) (models.Trips, error) {

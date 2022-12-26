@@ -16,6 +16,7 @@ type Trips struct {
 	Image          string    `json:"image" form:"image" gorm:"type: varchar(255)"`
 	Country        Country   `json:"country"`
 	CountryID      int       `json:"country_id" form:"country_id"`
+	UserID         int       `json:"user_id" form:"user_id"`
 	CreatedAt      time.Time `json:"-"`
 	UpdatedAt      time.Time `json:"-"`
 }

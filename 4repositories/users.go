@@ -35,13 +35,13 @@ func (r *repository) GetAcc(ID int) (models.User, error) {
 }
 
 func (r *repository) MakeAcc(user models.User) (models.User, error) {
-	err := r.db.Create(&user).Error
+	err := r.db.Model(&user).Updates(user).Error
 
 	return user, err
 }
 
 func (r *repository) EditAcc(user models.User) (models.User, error) {
-	err := r.db.Save(&user).Error
+	err := r.db.Model(&user).Updates(user).Error
 
 	return user, err
 }

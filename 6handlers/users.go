@@ -99,6 +99,18 @@ func (h *handlerUser) EditAcc(w http.ResponseWriter, r *http.Request) {
 		user.Password = request.Password
 	}
 
+	if request.Phone != "" {
+		user.Phone = request.Phone
+	}
+
+	if request.Address != "" {
+		user.Address = request.Address
+	}
+
+	if request.Gender != "" {
+		user.Gender = request.Gender
+	}
+
 	data, err := h.UserRepository.EditAcc(user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

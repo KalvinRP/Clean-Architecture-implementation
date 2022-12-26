@@ -26,26 +26,26 @@ func (r *repository) FindTrans() ([]models.Transaction, error) {
 }
 
 func (r *repository) GetTrans(ID int) (models.Transaction, error) {
-	var user models.Transaction
-	err := r.db.Preload("Trips").Preload("Users").First(&user, ID).Error
+	var trans models.Transaction
+	err := r.db.Preload("Trips").Preload("Users").First(&trans, ID).Error
 
-	return user, err
+	return trans, err
 }
 
-func (r *repository) MakeTrans(user models.Transaction) (models.Transaction, error) {
-	err := r.db.Create(&user).Error
+func (r *repository) MakeTrans(trans models.Transaction) (models.Transaction, error) {
+	err := r.db.Create(&trans).Error
 
-	return user, err
+	return trans, err
 }
 
-func (r *repository) EditTrans(user models.Transaction, ID int) (models.Transaction, error) {
-	err := r.db.Save(&user).Error
+func (r *repository) EditTrans(trans models.Transaction, ID int) (models.Transaction, error) {
+	err := r.db.Model(&trans).Updates(trans).Error
 
-	return user, err
+	return trans, err
 }
 
-func (r *repository) DeleteTrans(user models.Transaction, ID int) (models.Transaction, error) {
-	err := r.db.Delete(&user).Error
+func (r *repository) DeleteTrans(trans models.Transaction, ID int) (models.Transaction, error) {
+	err := r.db.Delete(&trans).Error
 
-	return user, err
+	return trans, err
 }

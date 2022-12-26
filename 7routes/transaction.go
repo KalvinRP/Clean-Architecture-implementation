@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"dewetour/2pkg/middleware"
 	"dewetour/2pkg/mysql"
 	repositories "dewetour/4repositories"
 	handlers "dewetour/6handlers"
@@ -14,7 +15,7 @@ func TransRoutes(r *mux.Router) {
 
 	r.HandleFunc("/transaction", h.FindTrans).Methods("GET")
 	r.HandleFunc("/transaction/{id}", h.GetTrans).Methods("GET")
-	r.HandleFunc("/transaction", h.MakeTrans).Methods("POST")
-	r.HandleFunc("/transaction/{id}", h.EditTrans).Methods("PATCH")
+	r.HandleFunc("/transaction", middleware.Auth(h.MakeTrans)).Methods("POST")
+	r.HandleFunc("/transaction/{id}", middleware.Auth(h.EditTrans)).Methods("PATCH")
 	r.HandleFunc("/transaction/{id}", h.DeleteTrans).Methods("DELETE")
 }
