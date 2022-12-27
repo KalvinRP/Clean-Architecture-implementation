@@ -15,7 +15,7 @@ func CountryRoutes(r *mux.Router) {
 
 	r.HandleFunc("/country", h.FindCountry).Methods("GET")
 	r.HandleFunc("/country/{id}", h.GetCountry).Methods("GET")
-	r.HandleFunc("/country", middleware.Auth(h.MakeCountry)).Methods("POST")
-	r.HandleFunc("/country/{id}", middleware.Auth(h.EditCountry)).Methods("PATCH")
-	r.HandleFunc("/country/{id}", middleware.Auth(h.DeleteCountry)).Methods("DELETE")
+	r.HandleFunc("/country", middleware.AuthAdmin(h.MakeCountry)).Methods("POST")
+	r.HandleFunc("/country/{id}", middleware.AuthAdmin(h.EditCountry)).Methods("PATCH")
+	r.HandleFunc("/country/{id}", middleware.AuthAdmin(h.DeleteCountry)).Methods("DELETE")
 }

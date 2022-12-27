@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"dewetour/2pkg/middleware"
 	"dewetour/2pkg/mysql"
 	repositories "dewetour/4repositories"
 	handlers "dewetour/6handlers"
@@ -12,8 +13,8 @@ func UserRoutes(r *mux.Router) {
 	userRepository := repositories.RepositoryUser(mysql.DB)
 	h := handlers.HandlerUser(userRepository)
 
-	r.HandleFunc("/user", h.FindAcc).Methods("GET")
-	r.HandleFunc("/user/{id}", h.GetAcc).Methods("GET")
-	r.HandleFunc("/user/{id}", h.EditAcc).Methods("PATCH")
-	r.HandleFunc("/user/{id}", h.DeleteAcc).Methods("DELETE")
+	r.HandleFunc("/user", middleware.Auth(h.FindAcc)).Methods("GET")
+	r.HandleFunc("/user/{id}", middleware.Auth(h.GetAcc)).Methods("GET")
+	r.HandleFunc("/user/{id}", middleware.Auth(h.EditAcc)).Methods("PATCH")
+	r.HandleFunc("/user/{id}", middleware.Auth(h.DeleteAcc)).Methods("DELETE")
 }

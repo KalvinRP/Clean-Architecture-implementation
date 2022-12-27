@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -52,6 +53,12 @@ func (h *handlerAuth) Register(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 	}
 
+	// Role := if strings.Contains(request.Email, "@dewetour.com") {"admin"}
+	role := "user"
+	if strings.Contains(request.Email, "@dewetour.com") {
+		role = "admin"
+	}
+
 	user := models.User{
 		Name:     request.Name,
 		Email:    request.Email,
@@ -59,6 +66,7 @@ func (h *handlerAuth) Register(w http.ResponseWriter, r *http.Request) {
 		Phone:    request.Phone,
 		Address:  request.Address,
 		Gender:   request.Gender,
+		Role:     role,
 	}
 
 	data, err := h.AuthRepository.Register(user)
@@ -108,6 +116,7 @@ func (h *handlerAuth) Login(w http.ResponseWriter, r *http.Request) {
 	//generate token
 	claims := jwt.MapClaims{}
 	claims["id"] = user.ID
+	claims["role"] = user.Role
 	claims["exp"] = time.Now().Add(time.Hour * 2).Unix() // 2 hours expired
 
 	token, errGenerateToken := jwtToken.GenerateToken(&claims)

@@ -11,9 +11,8 @@ type Country struct {
 }
 
 type CountryResponse struct {
-	ID     int    `json:"id"`
-	Name   string `json:"name"`
-	UserID int    `json:"user_id" gorm:"type: int"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 func (CountryResponse) TableName() string {
